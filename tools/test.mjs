@@ -130,31 +130,14 @@ await tap(); await sleep(60); await tap(); await sleep(300);
 const vp2 = await ev(`({scale: visualViewport.scale, y: scrollY})`);
 check(vp2.scale === vp.scale && vp2.y === 0, 'double tap does not zoom or scroll');
 
-// custom character image: make a test PNG (a plain blue square with a transparent border) and load it via the file input
-await ev(`__flappyBird.reset()`); await sleep(200);
-const png = await ev(`(() => { const c = document.createElement('canvas'); c.width = 64; c.height = 48;
-  const g = c.getContext('2d'); g.fillStyle = '#2a7fff'; g.fillRect(8, 8, 48, 32); g.fillStyle = '#fff'; g.fillRect(40, 14, 8, 8);
-  return c.toDataURL('image/png'); })()`);
-const pngPath = join(mkdtempSync(join(tmpdir(), 'flappyBird-skin-')), 'test-skin.png');
-writeFileSync(pngPath, Buffer.from(png.split(',')[1], 'base64'));
-const { root: docRoot } = await send('DOM.getDocument');
-const { nodeId } = await send('DOM.querySelector', { nodeId: docRoot.nodeId, selector: '#skinFile' });
-await send('DOM.setFileInputFiles', { nodeId, files: [pngPath] }); await sleep(600);
-const sk = await ev(`({ w: __flappyBird.skin && __flappyBird.skin.width, h: __flappyBird.skin && __flappyBird.skin.height, saved: !!localStorage.getItem('flappyBird.skin'), btnVisible: getComputedStyle(document.getElementById('ui')).display !== 'none' })`);
-check(sk.w === 22 && sk.h > 0 && sk.saved, `custom image loads, cropped + fit to sprite (${sk.w}x${sk.h}), saved`);
-check(sk.btnVisible, 'image button visible on title screen');
-const stBefore = await ev(`__flappyBird.G.state`);
-const br = await ev(`(() => { const r = document.getElementById('skinBtn').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()`);
-await send('Page.setInterceptFileChooserDialog', { enabled: true });
-await tap(br[0], br[1]); await sleep(150); // tap the button area must not start a run
-check(stBefore === 'ready' && await ev(`__flappyBird.G.state`) === 'ready', 'tapping the image button does not start a run');
-await shot('5-custom-skin.png');
-await send('Page.reload'); await sleep(1200);
-check(await ev(`!!__flappyBird.skin`), 'custom image survives reload');
-await tap(); await sleep(200);
-check(await ev(`getComputedStyle(document.getElementById('ui')).display === 'none'`), 'buttons hide during a run');
-await ev(`document.getElementById('skinReset').click()`);
-check(await ev(`!__flappyBird.skin && !localStorage.getItem('flappyBird.skin')`), 'reset button goes back to Flappy Bird');
+// Existing device preferences cannot override the built-in bird.
+await ev(`__flappyBird.reset(); localStorage.setItem('flappyBird.skin', 'data:image/png;base64,invalid')`);
+await send('Page.reload'); await sleep(700);
+check(await ev(`!!__flappyBird.defaultBird && !document.querySelector('input[type="file"], #skinBtn, #skinReset, #ui')`), 'default bird loads with no character picker controls');
+check(await ev(`!('skin' in __flappyBird)`), 'saved character override is no longer used');
+await ev(`localStorage.removeItem('flappyBird.skin')`);
+await tap(); await sleep(100);
+check(await ev(`__flappyBird.G.state`) === 'play', 'tap still starts the run after reload');
 
 check(!logs.some(l => l.startsWith('EXCEPTION')), 'no page exceptions');
 if (logs.length) console.log('console:', logs);
