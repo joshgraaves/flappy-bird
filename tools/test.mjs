@@ -77,16 +77,16 @@ check(Math.abs(det[0] - det[1]) < 0.5, `same height after 1s at 60 vs 120 Hz (${
 // Opening difficulty and ramp: stable openings and reachable height changes.
 const opening = await ev(`(() => {
  const L = __flappyBird; L.reset();
- const easy = L.difficulty(0), five = L.difficulty(5), hard = L.difficulty(20), capped = L.difficulty(100);
- for (let i = 0; i < 3; i++) L.spawnPillar(300 + i * 136);
+ const easy = L.difficulty(0), two = L.difficulty(2), hard = L.difficulty(12), capped = L.difficulty(100);
+ for (let i = 0; i < 2; i++) L.spawnPillar(300 + i * 124);
  const pipes = L.G.pillars.map(p => ({c:p.c,gap:p.gap}));
- L.G.score = 20;
- const stable = L.G.pillars.every(p => p.gap === 100);
- L.reset(); return {easy,five,hard,capped,pipes,stable};
+ L.G.score = 12;
+ const stable = L.G.pillars.every(p => p.gap === 84);
+ L.reset(); return {easy,two,hard,capped,pipes,stable};
 })()`);
-check(opening.easy.gap === 100 && opening.easy.speed === 58 && opening.five.gap === 100, 'first five points use forgiving settings');
-check(opening.hard.gap === 76 && opening.hard.speed === 76 && opening.capped.gap === opening.hard.gap, 'difficulty ramps to a capped level');
-check(opening.pipes.every((p,i,a) => !i || Math.abs(p.c-a[i-1].c) <= 12), 'opening pipes avoid abrupt height changes');
+check(opening.easy.gap === 84 && opening.easy.speed === 68 && opening.two.gap === 84, 'first two points provide a moderate warm-up');
+check(opening.hard.gap === 70 && opening.hard.speed === 80 && opening.capped.gap === opening.hard.gap, 'difficulty ramps to a capped level');
+check(opening.pipes.every((p,i,a) => !i || Math.abs(p.c-a[i-1].c) <= 20), 'opening pipes avoid abrupt height changes');
 check(opening.stable, 'existing pipe openings never shrink when score increases');
 
 // tap starts run
