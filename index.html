@@ -78,7 +78,7 @@ function resize() {
   dpr = Math.max(1, window.devicePixelRatio || 1);
   const cw = window.innerWidth, ch = window.innerHeight;
   const devW = Math.round(cw * dpr), devH = Math.round(ch * dpr);
-  S = Math.max(1, Math.round(devW / TARGET_W));      // integer pixel scale
+  S = Math.max(1, Math.round(Math.min(devW / TARGET_W, devH / 360)));  // integer pixel scale; keep >=~360 rows on wide screens
   W = Math.ceil(devW / S); H = Math.ceil(devH / S);
   cv.width = devW; cv.height = devH;
   cv.style.width = cw + 'px'; cv.style.height = ch + 'px';
