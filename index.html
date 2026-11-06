@@ -7,14 +7,14 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Flappy Bird">
-<meta name="theme-color" content="#1d1b4a">
+<meta name="theme-color" content="#70c5ce">
 <meta name="format-detection" content="telephone=no">
 <title>Flappy Bird</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <style>
-  html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#1d1b4a;
+  html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#70c5ce;
     touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
     -webkit-tap-highlight-color:transparent;overscroll-behavior:none}
   body{position:fixed;inset:0}
@@ -23,7 +23,7 @@
   #ui{position:fixed;top:calc(env(safe-area-inset-top) + 10px);right:calc(env(safe-area-inset-right) + 12px);display:flex;gap:8px;z-index:2}
   #ui.hide{display:none}
   #ui label,#ui button{display:flex;align-items:center;justify-content:center;width:40px;height:40px;padding:0;margin:0;
-    background:#3d3170;border:3px solid #1b1430;border-radius:6px;box-shadow:inset 0 -3px 0 #2a2250;cursor:pointer;touch-action:manipulation}
+    background:#e99b38;border:3px solid #543c28;border-radius:6px;box-shadow:inset 0 -3px 0 #bd6a27;cursor:pointer;touch-action:manipulation}
   #ui button{width:32px;height:32px;align-self:center}
   #ui:not(.custom) #skinReset{display:none}
   body.drag::after{content:'';position:fixed;inset:12px;border:4px dashed #ffd84a;border-radius:12px;pointer-events:none}
@@ -38,7 +38,7 @@
   <label id="skinBtn" for="skinFile" aria-label="Use your own character image">
     <svg viewBox="0 0 10 10" width="22" height="22" shape-rendering="crispEdges"><path fill="#fff" d="M1 2h8v6H1zM2 3v4h6V3z"/><path fill="#ffd84a" d="M3 6h1V5h1v1h1V4h1v3H3z"/><path fill="#fff" d="M3 3h1v1H3z"/></svg>
   </label>
-  <button id="skinReset" aria-label="Back to Flappy Bird">
+  <button id="skinReset" aria-label="Back to default bird">
     <svg viewBox="0 0 10 10" width="16" height="16" shape-rendering="crispEdges"><path fill="#fff" d="M2 2h2v1h1v1h1V3h1V2h1v2H7v1H6v1h1v1h1v1H7V7H6V6H5v1H4v1H2V7h1V6h1V5h1V4H3V3H2z"/></svg>
   </button>
   <input type="file" id="skinFile" accept="image/*" hidden>
@@ -91,59 +91,17 @@ function resize() {
 }
 
 // ---------- palette ----------
-const P = {
-  k: '#1b1430', h: '#3d3170', H: '#5a4a9c', w: '#ffffff', Y: '#fff3a0', y: '#ffd84a', o: '#f59e2c',
-  G: '#d8f0ff', stone: '#d9a066', stoneL: '#f3c98f', stoneD: '#a8693a', stoneO: '#3b2318', rune: '#5ef2e0',
-};
+const P = { k: '#543c28', w: '#ffffff', y: '#ffdc58' };
 
 // ---------- sprites ----------
-const BODY = [
-  '..........k..k..',
-  '...........kk...',
-  '..........kkkk..',
-  '....kkkk.khhhhk.',
-  '..kkYYYYkkhwwkhk',
-  '.kYYYYYYYkhwkkhk',
-  'kYYYYYYYYkhhhhHk',
-  'kYYYYYYYokhhhHk.',
-  'kyyYYYYookkhhk..',
-  '.kyyyyook.kkk...',
-  '..kkyyokk..k.k..',
-  '....kkk.........',
-];
-const WINGS = [
-  { x: 3, y: -1, m: ['kk.....', 'kGkk...', 'kGGGk..', '.kGGGk.', '..kkkk.'] },
-  { x: 2, y: 3, m: ['kkkkk..', 'kGGGGk.', '.kkkkk.'] },
-  { x: 3, y: 5, m: ['..kkkk.', '.kGGGk.', 'kGGGk..', 'kGkk...', 'kk.....'] },
-];
-function paint(g, map, ox, oy) {
-  for (let r = 0; r < map.length; r++) {
-    const row = map[r];
-    for (let c = 0; c < row.length; c++) {
-      const ch = row[c];
-      if (ch === '.') continue;
-      g.fillStyle = P[ch];
-      g.fillRect(ox + c, oy + r, 1, 1);
-    }
-  }
-}
-function drawFlappyBird(g, cx, cy, ang, wingF, glow) {
-  if (skin) {
-    g.save(); g.translate(Math.round(cx), Math.round(cy)); g.rotate(ang);
-    g.drawImage(skin, -Math.round(skin.width / 2), -Math.round(skin.height / 2));
-    g.restore(); return;
-  }
+function drawFlappyBird(g, cx, cy, ang) {
+  const sprite = skin || defaultBird;
+  if (!sprite) return;
   g.save();
   g.translate(Math.round(cx), Math.round(cy));
-  // glow halo (not rotated)
-  const a = 0.18 + 0.08 * glow;
-  g.fillStyle = `rgba(255,230,120,${a * 0.6})`; g.fillRect(-12, -6, 9, 9);
-  g.fillStyle = `rgba(255,230,120,${a})`;
-  g.beginPath(); g.arc(-4, 2, 11, 0, 6.283); g.fill();
   g.rotate(ang);
-  paint(g, BODY, -8, -6);
-  const wg = WINGS[[0, 1, 2, 1][wingF & 3]];
-  paint(g, wg.m, -8 + wg.x, -6 + wg.y);
+  g.imageSmoothingEnabled = false;
+  g.drawImage(sprite, -Math.round(sprite.width / 2), -Math.round(sprite.height / 2));
   g.restore();
 }
 
@@ -153,7 +111,7 @@ const F = {
   '3': ['111','001','111','001','111'], '4': ['101','101','111','001','001'], '5': ['111','100','111','001','111'],
   '6': ['111','100','111','101','111'], '7': ['111','001','010','010','010'], '8': ['111','101','111','101','111'],
   '9': ['111','101','111','001','111'],
-  A: ['010','101','111','101','101'], B: ['110','101','110','101','110'], C: ['011','100','100','100','011'],
+  A: ['010','101','111','101','101'], B: ['110','101','110','101','110'], C: ['011','100','100','100','011'], D: ['110','101','101','101','110'],
   E: ['111','100','110','100','111'], F: ['111','100','110','100','100'], G: ['011','100','101','101','011'], H: ['101','101','111','101','101'],
   I: ['111','010','010','010','111'], L: ['100','100','100','100','111'], M: ['10001','11011','10101','10001','10001'],
   N: ['1001','1101','1011','1001','1001'], O: ['010','101','101','101','010'], P: ['110','101','110','100','100'],
@@ -181,99 +139,82 @@ function text(g, s, cx, y, sc, col, out = P.k, shadow = true) {
 }
 
 // ---------- background ----------
-function rng(seed) { return () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296; }
-const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
 function buildSky() {
   const c = document.createElement('canvas'); c.width = W; c.height = H;
   const g = c.getContext('2d');
-  const bands = ['#1d1b4a', '#272259', '#332a6b', '#46337c', '#5e3c88', '#7c4690', '#9d5291', '#c0628f', '#dd7a8a', '#f09a82', '#f8bb7f'];
-  const top = 0, bot = groundY;
-  for (let y = top; y < bot; y++) {
-    const t = Math.pow(y / bot, 1.6) * (bands.length - 1);
-    let i = Math.floor(t); const f = t - i;
-    // ordered dither between bands
-    for (let x = 0; x < W; x += 2) {
-      const d = BAYER[(y & 3) * 4 + ((x >> 1) & 3)] / 16;
-      g.fillStyle = bands[Math.min(bands.length - 1, i + (f > d ? 1 : 0))];
-      g.fillRect(x, y, 2, 1);
-    }
+  g.fillStyle = '#70c5ce'; g.fillRect(0, 0, W, H);
+  // A continuous bank of low, blocky white clouds.
+  const base = groundY - 48;
+  g.fillStyle = '#e8f6dc';
+  for (let x = -20; x < W + 30; x += 27) {
+    g.fillRect(x, base + 4, 29, 24);
+    g.fillRect(x + 4, base - 2, 20, 8);
+    g.fillRect(x + 9, base - 6, 10, 5);
   }
-  const r = rng(7);
-  for (let i = 0; i < W * H / 260; i++) {
-    const x = (r() * W) | 0, y = (r() * bot * 0.55) | 0;
-    g.fillStyle = r() < 0.2 ? '#fff6c8' : 'rgba(255,255,255,.55)';
-    g.fillRect(x, y, 1, 1);
-  }
-  // moon
-  const mx = Math.round(W * 0.74), my = Math.round(safeTop + 46);
-  g.fillStyle = 'rgba(255,240,210,.12)'; g.beginPath(); g.arc(mx, my, 20, 0, 6.283); g.fill();
-  g.fillStyle = '#fff1d2'; g.beginPath(); g.arc(mx, my, 12, 0, 6.283); g.fill();
-  g.fillStyle = '#efd9b4'; g.fillRect(mx - 5, my - 3, 3, 3); g.fillRect(mx + 3, my + 4, 2, 2); g.fillRect(mx + 2, my - 7, 2, 2);
+  g.fillRect(0, base + 15, W, 40);
   return c;
 }
-// periodic ridge heights
-function ridge(x, seed, amp, base) {
-  return base + amp * (Math.sin(x * 0.031 + seed) * 0.55 + Math.sin(x * 0.073 + seed * 2.1) * 0.3 + Math.sin(x * 0.17 + seed * 3.7) * 0.15);
-}
 function drawHills(g, scroll) {
-  const far = scroll * 0.15, near = scroll * 0.4;
-  g.fillStyle = '#5a3f86';
-  for (let x = 0; x < W; x++) { const h = Math.round(ridge(x + far, 1.3, 16, 40)); g.fillRect(x, groundY - h, 1, h); }
-  g.fillStyle = '#3a2a63';
-  for (let x = 0; x < W; x++) {
-    const wx = Math.floor(x + near);
-    let h = Math.round(ridge(wx, 4.2, 8, 20));
-    // little pine-ish spikes
-    const m = ((wx % 23) + 23) % 23;
-    if (m < 7) h += 7 - Math.abs(m - 3) * 2;
-    g.fillRect(x, groundY - h, 1, h);
+  // Pale city skyline behind the rounded green hedges.
+  const off = Math.floor(scroll * 0.12) % 92;
+  for (let x = -92 - off; x < W + 92; x += 92) {
+    for (const [dx, w, h] of [[0,16,33],[18,12,42],[33,22,27],[58,15,38],[77,12,30]]) {
+      const y = groundY - h;
+      g.fillStyle = '#a8d9c3'; g.fillRect(x + dx, y, w, h);
+      g.fillStyle = '#d6edce'; g.fillRect(x + dx + 2, y + 2, w - 4, h - 2);
+      g.fillStyle = '#b6dfc5';
+      for (let wy = y + 5; wy < groundY; wy += 6)
+        for (let wx = x + dx + 4; wx < x + dx + w - 2; wx += 5) g.fillRect(wx, wy, 2, 3);
+    }
+  }
+  const near = Math.floor(scroll * 0.25) % 24;
+  g.fillStyle = '#6ebd65';
+  for (let x = -24 - near; x < W + 24; x += 24) {
+    g.fillRect(x, groundY - 14, 26, 14);
+    g.fillRect(x + 3, groundY - 19, 20, 6);
+    g.fillRect(x + 8, groundY - 22, 10, 4);
+  }
+  g.fillStyle = '#9cda73';
+  for (let x = -24 - near; x < W + 24; x += 24) {
+    g.fillRect(x + 2, groundY - 13, 22, 13);
+    g.fillRect(x + 5, groundY - 17, 16, 5);
+    g.fillRect(x + 9, groundY - 20, 8, 4);
   }
 }
 function drawGround(g, scroll) {
-  const gy = groundY, off = Math.floor(scroll) % 12;
-  g.fillStyle = '#2a1d45'; g.fillRect(0, gy, W, H - gy);
-  g.fillStyle = P.k; g.fillRect(0, gy, W, 1);
-  g.fillStyle = '#8b6fd1'; g.fillRect(0, gy + 1, W, 3);
-  g.fillStyle = '#6a4fae'; g.fillRect(0, gy + 4, W, 2);
-  // scrolling tufts + stripes
-  for (let x = -off; x < W + 12; x += 12) {
-    g.fillStyle = '#b39af0'; g.fillRect(x, gy + 1, 4, 1); g.fillRect(x + 1, gy, 2, 1);
-    g.fillStyle = '#3b2a5e';
-    for (let k = 0; k < 4; k++) g.fillRect(x + 6 - k, gy + 7 + k * 3, 4, 2);
+  const gy = groundY, off = Math.floor(scroll) % 8;
+  g.fillStyle = '#ded895'; g.fillRect(0, gy, W, H - gy);
+  g.fillStyle = '#543c28'; g.fillRect(0, gy, W, 1);
+  g.fillStyle = '#e8f5a5'; g.fillRect(0, gy + 1, W, 2);
+  g.fillStyle = '#8fc746'; g.fillRect(0, gy + 3, W, 5);
+  g.fillStyle = '#5b8d35';
+  for (let x = -off - 8; x < W + 8; x += 8) {
+    g.fillRect(x, gy + 3, 3, 1); g.fillRect(x + 1, gy + 4, 3, 1);
+    g.fillRect(x + 2, gy + 5, 3, 1); g.fillRect(x + 3, gy + 6, 3, 2);
   }
-  g.fillStyle = '#21173a'; g.fillRect(0, gy + 20, W, H - gy - 20);
+  g.fillStyle = '#543c28'; g.fillRect(0, gy + 8, W, 1);
+  g.fillStyle = '#c4a45b'; g.fillRect(0, gy + 9, W, 2);
+  g.fillStyle = '#f0e4a2'; g.fillRect(0, gy + 11, W, 2);
 }
 
-// ---------- pillars ----------
+// ---------- green pipes (same dimensions as the collision bounds) ----------
 function drawPillar(g, x, yTop, yBot, capAtBottom) {
-  // body from yTop..yBot, cap at the gap end
-  const w = T.pillarW, cw = w + 4, ch = 8;
+  const w = T.pillarW, ch = 8;
   x = Math.round(x);
   const y0 = Math.round(yTop), y1 = Math.round(yBot);
   if (y1 <= y0) return;
-  g.fillStyle = P.stoneO; g.fillRect(x, y0, w, y1 - y0);
-  g.fillStyle = P.stone; g.fillRect(x + 1, y0, w - 2, y1 - y0);
-  g.fillStyle = P.stoneL; g.fillRect(x + 3, y0, 3, y1 - y0);
-  g.fillStyle = P.stoneD; g.fillRect(x + w - 7, y0, 5, y1 - y0);
-  // mortar lines, anchored to the gap edge so they don't swim
-  g.fillStyle = P.stoneD;
-  const anchor = capAtBottom ? y1 : y0;
-  for (let i = 0; ; i++) {
-    const yy = capAtBottom ? anchor - 10 * (i + 1) : anchor + 10 * (i + 1);
-    if (yy < y0 || yy >= y1) break;
-    g.fillRect(x + 1, yy, w - 2, 1);
-    const jx = x + ((i & 1) ? 10 : 20);
-    if (capAtBottom) g.fillRect(jx, yy + 1, 1, 9); else g.fillRect(jx, yy - 9, 1, 9);
-  }
-  // cap
+  const pipe = (px, py, pw, ph) => {
+    g.fillStyle = '#543c28'; g.fillRect(px, py, pw, ph);
+    g.fillStyle = '#75bc34'; g.fillRect(px + 1, py + 1, pw - 2, ph - 2);
+    g.fillStyle = '#d4ed7c'; g.fillRect(px + 2, py + 1, 2, ph - 2);
+    g.fillStyle = '#a6d84b'; g.fillRect(px + 4, py + 1, 4, ph - 2);
+    g.fillStyle = '#588c28'; g.fillRect(px + pw - 5, py + 1, 3, ph - 2);
+    g.fillStyle = '#426d24'; g.fillRect(px + pw - 2, py + 1, 1, ph - 2);
+  };
+  pipe(x, y0, w, y1 - y0);
   const cy = capAtBottom ? y1 - ch : y0;
-  g.fillStyle = P.stoneO; g.fillRect(x - 2, cy, cw, ch);
-  g.fillStyle = P.stoneL; g.fillRect(x - 1, cy + 1, cw - 2, ch - 2);
-  g.fillStyle = P.stone; g.fillRect(x + 4, cy + 2, cw - 8, ch - 4);
-  g.fillStyle = P.stoneD; g.fillRect(x + cw - 6, cy + 1, 3, ch - 2);
-  // glowing rune
-  g.fillStyle = P.rune; g.fillRect(x + w / 2 - 1, cy + 3, 2, 2);
-  g.fillStyle = 'rgba(94,242,224,.35)'; g.fillRect(x + w / 2 - 2, cy + 2, 4, 4);
+  pipe(x - 2, cy, w + 4, ch);
+  g.fillStyle = '#e0f6a0'; g.fillRect(x - 1, cy + 1, w + 2, 1);
 }
 
 // ---------- audio ----------
@@ -424,40 +365,40 @@ function render(alpha) {
     drawPillar(g, sx, p.c + T.gap / 2, groundY, false);
   }
   drawGround(g, scroll);
-  drawFlappyBird(g, birdX(), y, ang, G.wing, Math.sin(G.t * 5));
+  drawFlappyBird(g, birdX(), y, ang);
 
   const cx = W / 2;
   if (G.state === 'ready') {
-    text(g, 'FLAPPY BIRD', cx, safeTop + 46, 6, P.y);
-    text(g, 'A FIREFLY FLIGHT', cx, safeTop + 86, 1, '#f3e6ff', P.k, false);
+    text(g, 'FLAPPY BIRD', cx, safeTop + 48, 3, P.y);
+    text(g, 'GET READY!', cx, safeTop + 86, 2, '#a8e64b');
     if ((G.t * 2 | 0) % 2 === 0) text(g, 'TAP TO FLY', cx, groundY * 0.48 + 34, 2, '#ffffff');
     if (best > 0) text(g, 'BEST ' + best, cx, groundY + 14, 1, '#ffd84a', P.k, false);
   } else if (G.state === 'play' || G.state === 'dying') {
     text(g, String(G.score), cx, safeTop + 14, 4, '#ffffff');
   } else if (G.state === 'over') {
     const k = Math.min(1, G.stateT / 0.25), drop = Math.round((1 - k) * (1 - k) * -30);
-    text(g, 'GAME OVER', cx, groundY * 0.22 + drop, 3, '#ff8a8a');
+    text(g, 'GAME OVER', cx, groundY * 0.22 + drop, 3, '#f5a14b');
     const pk = Math.min(1, Math.max(0, (G.stateT - 0.2) / 0.3));
     const pw = 116, ph = 62, px = Math.round(cx - pw / 2), py = Math.round(groundY * 0.36 + (1 - pk) * (H - groundY * 0.36));
     g.fillStyle = P.k; g.fillRect(px - 1, py - 1, pw + 2, ph + 2);
-    g.fillStyle = '#f6e7c8'; g.fillRect(px, py, pw, ph);
-    g.fillStyle = '#d9c39b'; g.fillRect(px, py + ph - 3, pw, 3); g.fillRect(px + pw - 3, py, 3, ph);
-    g.fillStyle = '#fffaf0'; g.fillRect(px, py, pw - 3, 2);
-    // gem medal
+    g.fillStyle = '#ded895'; g.fillRect(px, py, pw, ph);
+    g.fillStyle = '#bca562'; g.fillRect(px, py + ph - 3, pw, 3); g.fillRect(px + pw - 3, py, 3, ph);
+    g.fillStyle = '#f4e9af'; g.fillRect(px, py, pw - 3, 2);
+    // Classic round score medal.
     const tier = G.score >= 40 ? 3 : G.score >= 25 ? 2 : G.score >= 10 ? 1 : G.score >= 5 ? 0 : -1;
     const gx = px + 22, gy = py + 31;
-    g.fillStyle = '#c8b28a'; g.beginPath(); g.arc(gx, gy, 14, 0, 6.283); g.fill();
+    g.fillStyle = '#b8b579'; g.beginPath(); g.arc(gx, gy, 14, 0, 6.283); g.fill();
     if (tier >= 0) {
-      const gc = [['#c47a3a', '#e9a466'], ['#9fb4c8', '#e3eef7'], ['#e8b828', '#fff09a'], ['#3fe0d0', '#c9fff7']][tier];
-      g.fillStyle = P.k; g.beginPath(); g.moveTo(gx, gy - 11); g.lineTo(gx + 9, gy - 2); g.lineTo(gx, gy + 11); g.lineTo(gx - 9, gy - 2); g.fill();
-      g.fillStyle = gc[0]; g.beginPath(); g.moveTo(gx, gy - 9); g.lineTo(gx + 7, gy - 2); g.lineTo(gx, gy + 9); g.lineTo(gx - 7, gy - 2); g.fill();
-      g.fillStyle = gc[1]; g.fillRect(gx - 3, gy - 4, 3, 3);
-      if ((G.t * 3 | 0) % 3 === 0) { g.fillStyle = '#fff'; g.fillRect(gx + 3, gy - 9, 1, 3); g.fillRect(gx + 2, gy - 8, 3, 1); }
+      const gc = [['#c58144', '#f0b56e'], ['#a9b9bf', '#eff7f5'], ['#e6b733', '#fff29b'], ['#78cbb5', '#d7fff0']][tier];
+      g.fillStyle = P.k; g.beginPath(); g.arc(gx, gy, 12, 0, 6.283); g.fill();
+      g.fillStyle = gc[0]; g.beginPath(); g.arc(gx, gy, 11, 0, 6.283); g.fill();
+      g.strokeStyle = gc[1]; g.lineWidth = 1; g.beginPath(); g.arc(gx, gy, 8, 0, 6.283); g.stroke();
+      g.fillStyle = gc[1]; g.fillRect(gx - 2, gy - 5, 4, 10); g.fillRect(gx - 5, gy - 2, 10, 4);
     }
     const rx = px + pw - 26;
-    text(g, 'SCORE', rx, py + 7, 1, '#b5523a', '#f6e7c8', false);
+    text(g, 'SCORE', rx, py + 7, 1, '#c57d35', '#ded895', false);
     text(g, String(Math.floor(G.shownScore)), rx, py + 15, 2, '#ffffff');
-    text(g, 'BEST', rx, py + 34, 1, '#b5523a', '#f6e7c8', false);
+    text(g, 'BEST', rx, py + 34, 1, '#c57d35', '#ded895', false);
     text(g, String(best), rx, py + 42, 2, '#ffffff');
     if (G.newBest && G.shownScore >= G.score) { g.fillStyle = '#e8434f'; g.fillRect(px + 46, py + 33, 19, 9); glyphs(g, 'NEW', px + 48, py + 35, 1, '#fff'); }
     if (G.stateT > 0.6 && (G.t * 2 | 0) % 2 === 0) text(g, 'TAP TO RETRY', cx, py + ph + 18, 2, '#ffffff');
@@ -467,7 +408,7 @@ function render(alpha) {
   // blit to screen at an integer scale
   ctx.imageSmoothingEnabled = false;
   const sh = G.shake > 0 ? Math.round((Math.random() * 2 - 1) * 2) * S : 0;
-  ctx.fillStyle = '#1d1b4a'; ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.fillStyle = '#70c5ce'; ctx.fillRect(0, 0, cv.width, cv.height);
   ctx.drawImage(low, sh, 0, W * S, H * S);
 }
 
@@ -499,10 +440,10 @@ window.addEventListener('resize', () => { resize(); if (G.state === 'ready') res
 document.addEventListener('visibilitychange', () => { last = 0; acc = 0; });
 
 // ---------- custom character image (picked by the player, kept on this device only) ----------
-let skin = null;
+let skin = null, defaultBird = null;
 const SKIN_BOX = [22, 18]; // max logical size
 const ui = document.getElementById('ui');
-function setSkinFromImage(img) {
+function makeSprite(img) {
   // crop transparent edges, fit into the sprite box, snap alpha so it stays crisp
   const sc = document.createElement('canvas'); sc.width = img.naturalWidth || img.width; sc.height = img.naturalHeight || img.height;
   const sg = sc.getContext('2d'); sg.drawImage(img, 0, 0);
@@ -510,7 +451,7 @@ function setSkinFromImage(img) {
   let x0 = sc.width, y0 = sc.height, x1 = -1, y1 = -1;
   for (let y = 0; y < sc.height; y++) for (let x = 0; x < sc.width; x++)
     if (d[(y * sc.width + x) * 4 + 3] > 16) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
-  if (x1 < 0) return false;
+  if (x1 < 0) return null;
   const cw = x1 - x0 + 1, ch = y1 - y0 + 1, k = Math.min(SKIN_BOX[0] / cw, SKIN_BOX[1] / ch);
   const out = document.createElement('canvas');
   out.width = Math.max(1, Math.round(cw * k)); out.height = Math.max(1, Math.round(ch * k));
@@ -519,6 +460,11 @@ function setSkinFromImage(img) {
   const id = og.getImageData(0, 0, out.width, out.height);
   for (let i = 3; i < id.data.length; i += 4) id.data[i] = id.data[i] > 110 ? 255 : 0;
   og.putImageData(id, 0, 0);
+  return out;
+}
+function setSkinFromImage(img) {
+  const out = makeSprite(img);
+  if (!out) return false;
   skin = out; ui.classList.add('custom');
   try { localStorage.setItem('flappyBird.skin', out.toDataURL('image/png')); } catch (e) {}
   return true;
@@ -545,12 +491,17 @@ try {
 let uiState = '';
 setInterval(() => { if (G.state !== uiState) { uiState = G.state; ui.classList.toggle('hide', G.state !== 'ready'); } }, 100);
 
+// The supplied bird is the default; player uploads can still override it.
+const birdImage = new Image();
+birdImage.onload = () => { defaultBird = makeSprite(birdImage); };
+birdImage.src = 'bird.png';
+
 resize(); reset();
 requestAnimationFrame(frame);
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 
 // test hooks
-window.__flappyBird = { G, T, step, flap, reset, get W() { return W; }, get H() { return H; }, get groundY() { return groundY; }, birdX, get skin() { return skin; } };
+window.__flappyBird = { G, T, step, flap, reset, get W() { return W; }, get H() { return H; }, get groundY() { return groundY; }, birdX, get skin() { return skin; }, get defaultBird() { return defaultBird; } };
 })();
 </script>
 </body>

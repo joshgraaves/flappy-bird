@@ -1,19 +1,32 @@
-<!doctype html><meta charset="utf-8"><body style="margin:0;background:#000">
+<!doctype html><meta charset="utf-8"><body style="margin:0;background:#70c5ce">
 <canvas id="c"></canvas>
 <script>
-// Draws the Home Screen icon: Flappy Bird on a dusk sky. Usage: icon.html?s=512
+// Home Screen icon, using the same supplied bird as the game.
 const S = +(new URLSearchParams(location.search).get('s') || 512);
-const P = { k:'#1b1430', h:'#3d3170', H:'#5a4a9c', w:'#fff', Y:'#fff3a0', y:'#ffd84a', o:'#f59e2c', G:'#d8f0ff' };
-const BODY = ['..........k..k..','...........kk...','..........kkkk..','....kkkk.khhhhk.','..kkYYYYkkhwwkhk','.kYYYYYYYkhwkkhk','kYYYYYYYYkhhhhHk','kYYYYYYYokhhhHk.','kyyYYYYookkhhk..','.kyyyyook.kkk...','..kkyyokk..k.k..','....kkk.........'];
-const WING = ['kk.....','kGkk...','kGGGk..','.kGGGk.','..kkkk.'];
-const N = 32, c = document.getElementById('c'); c.width = c.height = S;
-const lo = document.createElement('canvas'); lo.width = lo.height = N; const g = lo.getContext('2d');
-const bands = ['#272259','#332a6b','#46337c','#5e3c88','#7c4690','#9d5291','#c0628f','#dd7a8a'];
-for (let y = 0; y < N; y++) { g.fillStyle = bands[Math.min(bands.length-1, (y / N * bands.length) | 0)]; g.fillRect(0, y, N, 1); }
-g.fillStyle = 'rgba(255,255,255,.7)'; [[4,4],[25,3],[28,9],[7,11],[20,6]].forEach(([x,y]) => g.fillRect(x,y,1,1));
-g.fillStyle = '#d9a066'; g.fillRect(0, 25, N, 7); g.fillStyle = '#f3c98f'; g.fillRect(0, 25, N, 1);
-g.fillStyle = 'rgba(255,230,120,.25)'; g.beginPath(); g.arc(13, 16, 10, 0, 6.3); g.fill();
-const paint = (m, ox, oy) => m.forEach((r, j) => [...r].forEach((ch, i) => { if (ch !== '.') { g.fillStyle = P[ch]; g.fillRect(ox+i, oy+j, 1, 1); } }));
-paint(BODY, 8, 9); paint(WING, 11, 8);
-const x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(lo, 0, 0, S, S);
+const c = document.getElementById('c'); c.width = c.height = S;
+const lo = document.createElement('canvas'); lo.width = lo.height = 48;
+const g = lo.getContext('2d');
+g.fillStyle = '#70c5ce'; g.fillRect(0, 0, 48, 48);
+g.fillStyle = '#e8f6dc'; g.fillRect(0, 31, 48, 9);
+g.fillRect(2, 28, 12, 5); g.fillRect(30, 27, 16, 7);
+g.fillStyle = '#9cda73'; g.fillRect(0, 35, 48, 5);
+g.fillStyle = '#543c28'; g.fillRect(0, 39, 48, 1);
+g.fillStyle = '#8fc746'; g.fillRect(0, 40, 48, 3);
+g.fillStyle = '#ded895'; g.fillRect(0, 43, 48, 5);
+const blit = () => { const x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(lo, 0, 0, S, S); };
+blit();
+const bird = new Image();
+bird.onload = () => {
+  const crop = document.createElement('canvas'); crop.width = bird.width; crop.height = bird.height;
+  const cg = crop.getContext('2d'); cg.drawImage(bird, 0, 0);
+  const d = cg.getImageData(0, 0, crop.width, crop.height).data;
+  let x0 = crop.width, y0 = crop.height, x1 = -1, y1 = -1;
+  for (let y = 0; y < crop.height; y++) for (let x = 0; x < crop.width; x++)
+    if (d[(y * crop.width + x) * 4 + 3] > 16) { x0 = Math.min(x0,x); y0 = Math.min(y0,y); x1 = Math.max(x1,x); y1 = Math.max(y1,y); }
+  const w = x1-x0+1, h = y1-y0+1;
+  const dw = 30, dh = Math.round(h/w*dw);
+  g.drawImage(crop, x0, y0, w, h, 9, Math.round(23-dh/2), dw, dh);
+  blit(); window.iconReady = true;
+};
+bird.src = '../bird.png';
 </script>

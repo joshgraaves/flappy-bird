@@ -1,10 +1,11 @@
 # Flappy Bird
 
-A one-tap firefly flight through stone pillars. Original pixel art, drawn in code; Web Audio blips.
-Single `index.html`, installable as a Home Screen web app (manifest + icons + offline service worker).
+A one-tap pixel game with blue skies, green pipes, and the supplied bird image.
+Tap or press Space / Up to flap. Pass a pipe pair for +1; hit a pipe or the ground and the run ends.
 
-- Tap to flap, pass a pillar pair for +1, hit a pillar or the ground and it's over.
-- Best score is kept in `localStorage`.
-- Fixed 120 Hz sim step, so it plays the same on 60 and 120 Hz screens.
+- Best score and optional custom character are saved on this device.
+- The image button on the title screen lets you pick a custom character; reset restores the default bird.
+- Fixed 120 Hz simulation, with touch support and an offline Home Screen app.
+- Keep `bird.png` alongside `index.html` when copying or hosting the game.
 
-Test: `node tools/test.mjs` (headless Chrome, 390x844 mobile emulation; also regenerates the icons).
+Test: `node tools/test.mjs` (headless Chrome mobile emulation; also regenerates icons).
