@@ -1,0 +1,19 @@
+<!doctype html><meta charset="utf-8"><body style="margin:0;background:#000">
+<canvas id="c"></canvas>
+<script>
+// Draws the Home Screen icon: Flappy Bird on a dusk sky. Usage: icon.html?s=512
+const S = +(new URLSearchParams(location.search).get('s') || 512);
+const P = { k:'#1b1430', h:'#3d3170', H:'#5a4a9c', w:'#fff', Y:'#fff3a0', y:'#ffd84a', o:'#f59e2c', G:'#d8f0ff' };
+const BODY = ['..........k..k..','...........kk...','..........kkkk..','....kkkk.khhhhk.','..kkYYYYkkhwwkhk','.kYYYYYYYkhwkkhk','kYYYYYYYYkhhhhHk','kYYYYYYYokhhhHk.','kyyYYYYookkhhk..','.kyyyyook.kkk...','..kkyyokk..k.k..','....kkk.........'];
+const WING = ['kk.....','kGkk...','kGGGk..','.kGGGk.','..kkkk.'];
+const N = 32, c = document.getElementById('c'); c.width = c.height = S;
+const lo = document.createElement('canvas'); lo.width = lo.height = N; const g = lo.getContext('2d');
+const bands = ['#272259','#332a6b','#46337c','#5e3c88','#7c4690','#9d5291','#c0628f','#dd7a8a'];
+for (let y = 0; y < N; y++) { g.fillStyle = bands[Math.min(bands.length-1, (y / N * bands.length) | 0)]; g.fillRect(0, y, N, 1); }
+g.fillStyle = 'rgba(255,255,255,.7)'; [[4,4],[25,3],[28,9],[7,11],[20,6]].forEach(([x,y]) => g.fillRect(x,y,1,1));
+g.fillStyle = '#d9a066'; g.fillRect(0, 25, N, 7); g.fillStyle = '#f3c98f'; g.fillRect(0, 25, N, 1);
+g.fillStyle = 'rgba(255,230,120,.25)'; g.beginPath(); g.arc(13, 16, 10, 0, 6.3); g.fill();
+const paint = (m, ox, oy) => m.forEach((r, j) => [...r].forEach((ch, i) => { if (ch !== '.') { g.fillStyle = P[ch]; g.fillRect(ox+i, oy+j, 1, 1); } }));
+paint(BODY, 8, 9); paint(WING, 11, 8);
+const x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(lo, 0, 0, S, S);
+</script>
