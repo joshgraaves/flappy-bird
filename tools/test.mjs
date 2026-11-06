@@ -74,6 +74,21 @@ const det = await ev(`(() => {
 })()`);
 check(Math.abs(det[0] - det[1]) < 0.5, `same height after 1s at 60 vs 120 Hz (${det.map(v => v.toFixed(2)).join(' vs ')})`);
 
+// Opening difficulty and ramp: stable openings and reachable height changes.
+const opening = await ev(`(() => {
+ const L = __flappyBird; L.reset();
+ const easy = L.difficulty(0), five = L.difficulty(5), hard = L.difficulty(20), capped = L.difficulty(100);
+ for (let i = 0; i < 3; i++) L.spawnPillar(300 + i * 136);
+ const pipes = L.G.pillars.map(p => ({c:p.c,gap:p.gap}));
+ L.G.score = 20;
+ const stable = L.G.pillars.every(p => p.gap === 100);
+ L.reset(); return {easy,five,hard,capped,pipes,stable};
+})()`);
+check(opening.easy.gap === 100 && opening.easy.speed === 58 && opening.five.gap === 100, 'first five points use forgiving settings');
+check(opening.hard.gap === 76 && opening.hard.speed === 76 && opening.capped.gap === opening.hard.gap, 'difficulty ramps to a capped level');
+check(opening.pipes.every((p,i,a) => !i || Math.abs(p.c-a[i-1].c) <= 12), 'opening pipes avoid abrupt height changes');
+check(opening.stable, 'existing pipe openings never shrink when score increases');
+
 // tap starts run
 await tap(); await sleep(100);
 check(await ev(`__flappyBird.G.state`) === 'play', 'tap starts the run');
@@ -92,7 +107,7 @@ const pilot = async (ms, shotAt) => {
   }
   return ev(`({st: __flappyBird.G.state, score: __flappyBird.G.score})`);
 };
-const r1 = await pilot(9000, 2);
+const r1 = await pilot(11000, 2);
 console.log('autopilot', r1);
 check(r1.score >= 3, `scoring works (autopilot scored ${r1.score})`);
 

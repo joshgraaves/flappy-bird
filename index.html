@@ -52,10 +52,10 @@ const T = {
   gravity: 1000,     // px/s^2
   flapVel: -250,     // px/s, set (not added) on tap
   maxFall: 400,      // px/s
-  speed: 78,         // scroll px/s
-  gap: 66,           // fixed opening size
+  speed: 76,         // full-difficulty scroll px/s
+  gap: 76,           // minimum opening size
   pillarW: 30,
-  spacing: 112,      // px between pillar pairs
+  spacing: 120,      // minimum px between pipe pairs
   groundH: 44,
   hitR: 5.5,
   step: 1 / 120,     // fixed sim timestep
@@ -261,16 +261,30 @@ const G = {
   scroll: 0, pscroll: 0, pillars: [], nextX: 0,
   score: 0, shownScore: 0, newBest: false, flash: 0, shake: 0, wing: 0, wingT: 0,
 };
+// Five forgiving points, then a gradual ramp through score twenty.
+function difficulty(score = G.score) {
+  const progress = Math.max(0, Math.min(1, (score - 5) / 15));
+  return { progress, speed: 58 + (T.speed - 58) * progress,
+    gap: 100 + (T.gap - 100) * progress,
+    spacing: 136 + (T.spacing - 136) * progress };
+}
 function birdX() { return Math.round(W * 0.3); }
 function reset() {
   Object.assign(G, { state: 'ready', stateT: 0, vy: 0, ang: 0, pang: 0, score: 0, shownScore: 0, newBest: false, flash: 0, shake: 0 });
   G.y = G.py = Math.round(groundY * 0.48);
-  G.pillars = [];
+  G.pillars = []; G.spawned = 0; G.lastGapCenter = null; G.speed = difficulty(0).speed;
 }
 function spawnPillar(wx) {
-  const minC = safeTop + 30 + T.gap / 2, maxC = groundY - 26 - T.gap / 2;
-  const c = minC + Math.random() * Math.max(0, maxC - minC);
-  G.pillars.push({ x: wx, c, passed: false });
+  const d = difficulty();
+  const minC = safeTop + 30 + d.gap / 2, maxC = groundY - 26 - d.gap / 2;
+  const startC = Math.max(minC, Math.min(maxC, Math.round(groundY * 0.48)));
+  const previous = G.lastGapCenter ?? startC;
+  const shift = G.spawned < 3 ? 12 : 18 + d.progress * 26;
+  const low = Math.max(minC, previous - shift), high = Math.min(maxC, previous + shift);
+  const c = G.spawned === 0 ? startC : low + Math.random() * Math.max(0, high - low);
+  // Keep each opening fixed once spawned; rendering and collisions share it.
+  G.pillars.push({ x: wx, c, gap: d.gap, passed: false });
+  G.lastGapCenter = c; G.spawned++;
 }
 function flap() {
   audio();
@@ -335,11 +349,12 @@ function step(dt) {
   }
   if (G.state !== 'play') return;
 
-  G.scroll += T.speed * dt;
-  while (G.nextX < G.scroll + W + T.pillarW + 8) { spawnPillar(G.nextX); G.nextX += T.spacing; }
+  G.speed += (difficulty().speed - G.speed) * Math.min(1, dt * 2);
+  G.scroll += G.speed * dt;
+  while (G.nextX < G.scroll + W + T.pillarW + 8) { spawnPillar(G.nextX); G.nextX += difficulty().spacing; }
   G.pillars = G.pillars.filter(p => p.x - G.scroll > -T.pillarW - 10);
   for (const p of G.pillars) {
-    const sx = p.x - G.scroll, top = p.c - T.gap / 2, bot = p.c + T.gap / 2;
+    const sx = p.x - G.scroll, top = p.c - p.gap / 2, bot = p.c + p.gap / 2;
     const hit =
       circleRect(bx, G.y, T.hitR, sx, -100, T.pillarW, top + 100) ||
       circleRect(bx, G.y, T.hitR, sx - 2, top - 8, T.pillarW + 4, 8) ||
@@ -361,8 +376,8 @@ function render(alpha) {
   for (const p of G.pillars) {
     const sx = p.x - scroll;
     if (sx > W + 4 || sx < -T.pillarW - 4) continue;
-    drawPillar(g, sx, 0, p.c - T.gap / 2, true);
-    drawPillar(g, sx, p.c + T.gap / 2, groundY, false);
+    drawPillar(g, sx, 0, p.c - p.gap / 2, true);
+    drawPillar(g, sx, p.c + p.gap / 2, groundY, false);
   }
   drawGround(g, scroll);
   drawFlappyBird(g, birdX(), y, ang);
@@ -501,7 +516,7 @@ requestAnimationFrame(frame);
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 
 // test hooks
-window.__flappyBird = { G, T, step, flap, reset, get W() { return W; }, get H() { return H; }, get groundY() { return groundY; }, birdX, get skin() { return skin; }, get defaultBird() { return defaultBird; } };
+window.__flappyBird = { G, T, step, flap, reset, difficulty, spawnPillar, get W() { return W; }, get H() { return H; }, get groundY() { return groundY; }, birdX, get skin() { return skin; }, get defaultBird() { return defaultBird; } };
 })();
 </script>
 </body>
