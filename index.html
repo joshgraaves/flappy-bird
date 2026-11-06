@@ -20,6 +20,13 @@
   body{position:fixed;inset:0}
   canvas{position:absolute;left:0;top:0;display:block;touch-action:none;
     image-rendering:pixelated;image-rendering:crisp-edges}
+  #ui{position:fixed;top:calc(env(safe-area-inset-top) + 10px);right:calc(env(safe-area-inset-right) + 12px);display:flex;gap:8px;z-index:2}
+  #ui.hide{display:none}
+  #ui label,#ui button{display:flex;align-items:center;justify-content:center;width:40px;height:40px;padding:0;margin:0;
+    background:#3d3170;border:3px solid #1b1430;border-radius:6px;box-shadow:inset 0 -3px 0 #2a2250;cursor:pointer;touch-action:manipulation}
+  #ui button{width:32px;height:32px;align-self:center}
+  #ui:not(.custom) #skinReset{display:none}
+  body.drag::after{content:'';position:fixed;inset:12px;border:4px dashed #ffd84a;border-radius:12px;pointer-events:none}
   #safe{position:fixed;visibility:hidden;pointer-events:none;
     padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
 </style>
@@ -27,6 +34,15 @@
 <body>
 <canvas id="c"></canvas>
 <div id="safe"></div>
+<div id="ui">
+  <label id="skinBtn" for="skinFile" aria-label="Use your own character image">
+    <svg viewBox="0 0 10 10" width="22" height="22" shape-rendering="crispEdges"><path fill="#fff" d="M1 2h8v6H1zM2 3v4h6V3z"/><path fill="#ffd84a" d="M3 6h1V5h1v1h1V4h1v3H3z"/><path fill="#fff" d="M3 3h1v1H3z"/></svg>
+  </label>
+  <button id="skinReset" aria-label="Back to Flappy Bird">
+    <svg viewBox="0 0 10 10" width="16" height="16" shape-rendering="crispEdges"><path fill="#fff" d="M2 2h2v1h1v1h1V3h1V2h1v2H7v1H6v1h1v1h1v1H7V7H6V6H5v1H4v1H2V7h1V6h1V5h1V4H3V3H2z"/></svg>
+  </button>
+  <input type="file" id="skinFile" accept="image/*" hidden>
+</div>
 <script>
 (() => {
 'use strict';
@@ -112,6 +128,11 @@ function paint(g, map, ox, oy) {
   }
 }
 function drawFlappyBird(g, cx, cy, ang, wingF, glow) {
+  if (skin) {
+    g.save(); g.translate(Math.round(cx), Math.round(cy)); g.rotate(ang);
+    g.drawImage(skin, -Math.round(skin.width / 2), -Math.round(skin.height / 2));
+    g.restore(); return;
+  }
   g.save();
   g.translate(Math.round(cx), Math.round(cy));
   // glow halo (not rotated)
@@ -463,10 +484,13 @@ function frame(now) {
 }
 
 // ---------- input ----------
-function onPress(e) { if (e.cancelable) e.preventDefault(); flap(); }
+function onPress(e) {
+  if (e.target && e.target.closest && e.target.closest('#ui')) return; // let the buttons work normally
+  if (e.cancelable) e.preventDefault(); flap();
+}
 window.addEventListener('touchstart', onPress, { passive: false });
 window.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
-window.addEventListener('touchend', e => e.preventDefault(), { passive: false });
+window.addEventListener('touchend', e => { if (!(e.target.closest && e.target.closest('#ui'))) e.preventDefault(); }, { passive: false });
 window.addEventListener('gesturestart', e => e.preventDefault());
 window.addEventListener('dblclick', e => e.preventDefault());
 window.addEventListener('mousedown', e => { if (!e.sourceCapabilities || !e.sourceCapabilities.firesTouchEvents) onPress(e); });
@@ -474,12 +498,59 @@ window.addEventListener('keydown', e => { if ((e.code === 'Space' || e.code === 
 window.addEventListener('resize', () => { resize(); if (G.state === 'ready') reset(); });
 document.addEventListener('visibilitychange', () => { last = 0; acc = 0; });
 
+// ---------- custom character image (picked by the player, kept on this device only) ----------
+let skin = null;
+const SKIN_BOX = [22, 18]; // max logical size
+const ui = document.getElementById('ui');
+function setSkinFromImage(img) {
+  // crop transparent edges, fit into the sprite box, snap alpha so it stays crisp
+  const sc = document.createElement('canvas'); sc.width = img.naturalWidth || img.width; sc.height = img.naturalHeight || img.height;
+  const sg = sc.getContext('2d'); sg.drawImage(img, 0, 0);
+  const d = sg.getImageData(0, 0, sc.width, sc.height).data;
+  let x0 = sc.width, y0 = sc.height, x1 = -1, y1 = -1;
+  for (let y = 0; y < sc.height; y++) for (let x = 0; x < sc.width; x++)
+    if (d[(y * sc.width + x) * 4 + 3] > 16) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  if (x1 < 0) return false;
+  const cw = x1 - x0 + 1, ch = y1 - y0 + 1, k = Math.min(SKIN_BOX[0] / cw, SKIN_BOX[1] / ch);
+  const out = document.createElement('canvas');
+  out.width = Math.max(1, Math.round(cw * k)); out.height = Math.max(1, Math.round(ch * k));
+  const og = out.getContext('2d'); og.imageSmoothingEnabled = true; og.imageSmoothingQuality = 'high';
+  og.drawImage(sc, x0, y0, cw, ch, 0, 0, out.width, out.height);
+  const id = og.getImageData(0, 0, out.width, out.height);
+  for (let i = 3; i < id.data.length; i += 4) id.data[i] = id.data[i] > 110 ? 255 : 0;
+  og.putImageData(id, 0, 0);
+  skin = out; ui.classList.add('custom');
+  try { localStorage.setItem('flappyBird.skin', out.toDataURL('image/png')); } catch (e) {}
+  return true;
+}
+function loadSkinFile(file) {
+  if (!file || !/^image\//.test(file.type)) return;
+  const url = URL.createObjectURL(file), img = new Image();
+  img.onload = () => { setSkinFromImage(img); URL.revokeObjectURL(url); };
+  img.onerror = () => URL.revokeObjectURL(url);
+  img.src = url;
+}
+document.getElementById('skinFile').addEventListener('change', e => { loadSkinFile(e.target.files[0]); e.target.value = ''; });
+document.getElementById('skinReset').addEventListener('click', () => {
+  skin = null; ui.classList.remove('custom'); try { localStorage.removeItem('flappyBird.skin'); } catch (e) {}
+});
+window.addEventListener('dragover', e => { e.preventDefault(); document.body.classList.add('drag'); });
+window.addEventListener('dragleave', e => { if (!e.relatedTarget) document.body.classList.remove('drag'); });
+window.addEventListener('drop', e => { e.preventDefault(); document.body.classList.remove('drag'); loadSkinFile(e.dataTransfer.files[0]); });
+try {
+  const saved = localStorage.getItem('flappyBird.skin');
+  if (saved) { const img = new Image(); img.onload = () => { skin = img; ui.classList.add('custom'); }; img.src = saved; }
+} catch (e) {}
+// only show the buttons on the title screen
+let uiState = '';
+setInterval(() => { if (G.state !== uiState) { uiState = G.state; ui.classList.toggle('hide', G.state !== 'ready'); } }, 100);
+
 resize(); reset();
 requestAnimationFrame(frame);
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 
 // test hooks
-window.__flappyBird = { G, T, step, flap, reset, get W() { return W; }, get H() { return H; }, get groundY() { return groundY; }, birdX };
+window.__flappyBird = { G, T, step, flap, reset, get W() { return W; }, get H() { return H; }, get groundY() { return groundY; }, birdX, get skin() { return skin; } };
 })();
 </script>
 </body>
